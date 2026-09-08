@@ -14,6 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'Magic Keys',
+  icons: { icon: '/favicon.svg' },
   description: 'Design a keyboard layout and program context-sensitive Magic and Repeat keys. Export QMK, VIA, Vial, and ZMK build projects.',
 };
 
