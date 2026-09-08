@@ -21,3 +21,34 @@ jobs:
       - run: npm test
       - run: npm run typecheck
       - run: npm run build
+      - name: Validate deployment image
+        run: |
+          docker build -t magic-keys:ci .
+          docker run -d --name magic-keys-ci -p 127.0.0.1:3110:3000 magic-keys:ci
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:3110/healthz; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:3110/healthz
+          curl --fail --silent --output /dev/null http://127.0.0.1:3110/
+      - name: Stop validation container
+        if: always()
+        run: docker rm -f magic-keys-ci || true
+  deploy:
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Release through Deploy Manager
+        env:
+          DEPLOY_WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
+          DEPLOY_WEBHOOK_SECRET: ${{ secrets.DEPLOY_WEBHOOK_SECRET }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: node scripts/notify-deploy.mjs

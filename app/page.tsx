@@ -1,20 +1,24 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Sparkles, ArrowRight, Download, Plus, Trash2, RotateCcw, Keyboard, SlidersHorizontal, Code2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import FirmwareBuild from './firmware-build';
+import { flushSync } from 'react-dom';
+import { registerProjectTools } from '@/lib/webmcp.mjs';
 import { defaultProject, PRESETS, LAYOUTS, keysForLayout, parseDescription, simulate, initialState, validate, qmkSource } from '@/lib/engine.mjs';
 
 type Rule={after:string;output:string;repeat:string;cursor:number};
 export default function Home(){
  const [project,setProject]=useState(defaultProject);
+ const projectRef=useRef(project);projectRef.current=project;
+ useEffect(()=>registerProjectTools((document as any).modelContext,()=>projectRef.current,(p:any)=>{projectRef.current=p;flushSync(()=>{setProject(p);setMode(p.board==='urchin'?'zmk':'via');});}),[]);
  const [tab,setTab]=useState<'magic'|'repeat'>('magic'); const [view,setView]=useState('cases');
  const [description,setDescription]=useState('after i type "on"\nafter m type "ent"\nspace -> the');
  const [status,setStatus]=useState(''); const [sim,setSim]=useState(initialState);const [selected,setSelected]=useState<number|null>(null);
  const [mode,setMode]=useState('via');const [ready,setReady]=useState(false);
- useEffect(()=>{try{const raw=localStorage.getItem('magic-keys-project');if(raw)setProject(validate(JSON.parse(raw)));}catch{setStatus('Your saved project could not be loaded. The default is ready.');}setReady(true);},[]);
+ useEffect(()=>{try{const raw=localStorage.getItem('magic-keys-project');if(raw){const p=validate(JSON.parse(raw));setProject(p);setMode(p.board==='urchin'?'zmk':'via');}}catch{setStatus('Your saved project could not be loaded. The default is ready.');}setReady(true);},[]);
  useEffect(()=>{if(ready)try{localStorage.setItem('magic-keys-project',JSON.stringify(project));}catch{setStatus('Browser storage unavailable. Export your project to keep a copy.');}},[project,ready]);
  const rules:Rule[]=project[tab];
  const update=(i:number,patch:Partial<Rule>)=>setProject({...project,[tab]:rules.map((r,n)=>n===i?{...r,...patch}:r)});
