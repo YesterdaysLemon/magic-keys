@@ -7,6 +7,7 @@ const signature='sha256='+createHmac('sha256',secret).update(payload).digest('he
 const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-GitHub-Event':'push','X-Hub-Signature-256':signature},body:payload,signal:AbortSignal.timeout(30000)});
 if(!response.ok)throw Error(`Deploy Manager returned ${response.status}`);
 const accepted=await response.json();if(!accepted.job?.id||!accepted.receipt)throw Error('Missing deployment receipt.');
+if(accepted.duplicate && ['failed','rolled-back','interrupted'].includes(accepted.job.status))throw Error(`Deploy Manager reused terminal release ${accepted.job.id} (${accepted.job.status}). Its replay key includes the commit SHA; dispatching the same commit cannot restart this release. Submit a new commit or recover the release in Deploy Manager.`);
 const receipt=new URL(accepted.receipt,url.origin);if(receipt.origin!==url.origin)throw Error('Unexpected receipt origin');
 console.log(`Deploy Manager accepted ${accepted.job.id}: ${receipt}`);
 for(let i=0;i<240;i++){
