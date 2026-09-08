@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: Firmware mode (Planck rev6)
+        description: Firmware mode (Planck rev6 or Urchin)
         type: choice
-        options: [via, vial, qmk]
+        options: [via, vial, qmk, zmk]
         default: via
       project:
         description: Magic Keys project JSON (blank uses reference preset)
@@ -40,6 +40,7 @@ jobs:
           include-hidden-files: true
           retention-days: 1
   compile:
+    if: inputs.mode != 'zmk'
     needs: generate
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -67,10 +68,10 @@ jobs:
         run: cp -R generated/keyboards/planck/rev6/keymaps/* keyboards/planck/rev6/keymaps/
       - name: Compile QMK and VIA
         if: inputs.mode != 'vial'
-        run: qmk compile -kb planck/rev6 -km magic_keys
+        run: QMK_HOME="$PWD" qmk compile -kb planck/rev6 -km magic_keys
       - name: Compile Vial
         if: inputs.mode == 'vial'
-        run: qmk compile -kb planck/rev6 -km vial
+        run: QMK_HOME="$PWD" qmk compile -kb planck/rev6 -km vial
       - name: Record checksums
         run: sha256sum ./*.bin > firmware-sha256.txt
       - uses: actions/upload-artifact@v4
@@ -79,6 +80,46 @@ jobs:
           path: |
             ./*.bin
             firmware-sha256.txt
+            generated/magic-keys.json
+            generated/README.md
+          if-no-files-found: error
+          retention-days: 3
+
+  compile-zmk:
+    if: inputs.mode == 'zmk'
+    needs: generate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        side: [left, right]
+    container: zmkfirmware/zmk-build-arm:stable
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: generated-source
+          path: generated
+      - name: Initialize pinned ZMK workspace
+        run: |
+          west init -l generated/config
+          cd generated
+          west update
+          west zephyr-export
+      - name: Compile Urchin
+        env:
+          SIDE: ${{ matrix.side }}
+        run: |
+          cd generated
+          west build -s zmk/app -b nice_nano_v2 -d build -- -DZMK_CONFIG="$PWD/config" -DSHIELD="urchin_${SIDE}"
+          cp build/zephyr/zmk.uf2 "urchin-${SIDE}-nice-nano-v2.uf2"
+          sha256sum ./*.uf2 > firmware-sha256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: urchin-${{ matrix.side }}-flash
+          path: |
+            generated/*.uf2
+            generated/firmware-sha256.txt
             generated/magic-keys.json
             generated/README.md
           if-no-files-found: error
