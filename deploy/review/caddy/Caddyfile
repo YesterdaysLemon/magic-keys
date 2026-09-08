@@ -1,0 +1,7 @@
+keys.alirezaafshan.com {
+  reverse_proxy 127.0.0.1:3110
+}
+
+deploy.alirezaafshan.com {
+  reverse_proxy 127.0.0.1:9019
+}

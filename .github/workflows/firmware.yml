@@ -64,6 +64,8 @@ jobs:
         with:
           name: generated-source
           path: generated
+      - name: Trust this ephemeral checkout
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Install keymap
         run: |
           mkdir -p keyboards/planck/rev6/keymaps

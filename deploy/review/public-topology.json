@@ -1,0 +1,50 @@
+{
+  "generatedBy": "deploy-manager setup",
+  "auditedAt": "2026-09-08T08:21:47.847Z",
+  "host": {
+    "name": "Afshan VPS",
+    "platform": "Linux + Docker",
+    "edge": "Caddy",
+    "manager": "Deploy Manager",
+    "release": "unknown",
+    "status": "configured"
+  },
+  "routes": [
+    {
+      "id": "magic-keys",
+      "appId": "magic-keys",
+      "name": "Magic Keys",
+      "hostname": "keys.alirezaafshan.com",
+      "port": 3110,
+      "kind": "lab",
+      "description": "Keyboard layouts and context-sensitive Magic and Repeat programming.",
+      "url": "https://keys.alirezaafshan.com/",
+      "plot": {
+        "x": -1.5,
+        "z": -1.5
+      },
+      "healthPath": "/healthz"
+    }
+  ],
+  "datastores": [],
+  "controlPlane": [
+    {
+      "id": "caddy",
+      "name": "Caddy edge",
+      "status": "declared",
+      "description": "Terminates public HTTPS and routes hostnames to loopback-only services."
+    },
+    {
+      "id": "deploy-manager",
+      "name": "Deploy Manager",
+      "status": "online",
+      "description": "Receives signed release requests and reports active loopback health evidence."
+    },
+    {
+      "id": "docker",
+      "name": "Docker engine",
+      "status": "declared",
+      "description": "Runs production and candidate containers on isolated local ports."
+    }
+  ]
+}

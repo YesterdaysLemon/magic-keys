@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "host": {
+    "name": "Afshan VPS",
+    "platform": "Linux + Docker",
+    "edge": "Caddy",
+    "manager": "Deploy Manager"
+  },
+  "manager": {
+    "hostname": "deploy.alirezaafshan.com",
+    "port": 9019,
+    "repository": "YesterdaysLemon/deploy-manager",
+    "branch": "main",
+    "probeIntervalMs": 30000,
+    "probeTimeoutMs": 2500
+  },
+  "apps": [
+    {
+      "id": "magic-keys",
+      "name": "Magic Keys",
+      "description": "Keyboard layouts and context-sensitive Magic and Repeat programming.",
+      "kind": "lab",
+      "repository": "YesterdaysLemon/magic-keys",
+      "branch": "main",
+      "secretEnv": "MAGIC_KEYS_DEPLOY_WEBHOOK_SECRET",
+      "repoDir": "/opt/magic-keys/app",
+      "repoUser": "codex",
+      "imageName": "magic-keys",
+      "containerName": "magic-keys",
+      "candidateContainerName": "magic-keys-candidate",
+      "publicPort": 3110,
+      "candidatePort": 3111,
+      "containerPort": 3000,
+      "healthPath": "/healthz",
+      "hostname": "keys.alirezaafshan.com"
+    }
+  ],
+  "datastores": []
+}

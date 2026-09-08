@@ -1,0 +1,13 @@
+{
+  "apps": {
+    "magic-keys": {
+      "repo": "YesterdaysLemon/magic-keys",
+      "branch": "main",
+      "event": "push",
+      "secretEnv": "MAGIC_KEYS_DEPLOY_WEBHOOK_SECRET",
+      "publicName": "Magic Keys",
+      "publicDescription": "Keyboard layouts and context-sensitive Magic and Repeat programming.",
+      "publicUrl": "https://keys.alirezaafshan.com/"
+    }
+  }
+}
