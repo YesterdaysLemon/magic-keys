@@ -1,5 +1,7 @@
 # Magic Keys
 
+[Open the app](https://magic-keys.alirezaafshan.chatgpt.site) · [Reference firmware](https://github.com/YesterdaysLemon/magic-keys/releases/tag/v0.1.0)
+
 A keyboard layout editor and context-sensitive key programmer. Give Magic and Repeat different behaviors based on the previous key, test them in a playground, and generate firmware projects for exact hardware targets.
 
 ## First pass
@@ -38,3 +40,13 @@ The Urchin pinout files retain Duccio Breschi's MIT notices. QMK/Vial firmware r
 Designed for the user's [Deploy Manager](https://github.com/YesterdaysLemon/deploy-manager), with a Dockerfile, `/healthz`, signed CI release notification, and candidate/production health checks. Do not mistake a deployment acceptance for a completed release.
 
 The repository is public. CI uses standard Ubuntu runners, never paid larger runners. Firmware jobs are on demand; artifacts have short retention. GitHub artifact storage is still separately metered even when public-repository runner minutes are free.
+
+## Verification checkpoint — 2026-09-08
+
+13 automated checks pass, including compilation and execution of the generated C in a native harness. The deployment Docker image passes health and root-page checks in CI.
+
+- [Planck rev6 + VIA build](https://github.com/YesterdaysLemon/magic-keys/actions/runs/34203959969): BIN produced.
+- [Planck rev6 + Vial build](https://github.com/YesterdaysLemon/magic-keys/actions/runs/34204611023): BIN produced, embedded definition included.
+- [Urchin left/right ZMK build](https://github.com/YesterdaysLemon/magic-keys/actions/runs/34203888129): both UF2s produced.
+
+Reference release archives include the exact project and binary hashes. These are compiler-verified reference files, not a claim of physical keyboard testing. Custom projects must be built separately. The optional WebMCP tools have contract tests; a live browser WebMCP runtime was not verified.
