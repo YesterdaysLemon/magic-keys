@@ -10,7 +10,7 @@ command -v flock >/dev/null
 exec 9>/run/lock/magic-keys-install.lock
 flock -n 9 || { echo 'Another Magic Keys installation is running.' >&2; exit 1; }
 # New app only: do not overwrite an existing integration.
-[[ ! -e /etc/deploy-manager/apps/magic-keys.env && ! -e /opt/magic-keys ]] || { echo 'Magic Keys already has host state. Inspect it before retrying.' >&2; exit 1; }
+[[ ! -e /etc/deploy-manager/apps/magic-keys.env ]] || { echo 'Magic Keys already has host state. Inspect it before retrying.' >&2; exit 1; }
 for port in 3110 3111; do
   if ss -H -lnt "sport = :$port" | read -r _; then echo "Port $port is already occupied." >&2; exit 1; fi
 done
@@ -47,7 +47,12 @@ rollback_install() {
 trap rollback_install ERR
 # Stage a public checkout owned by the existing unprivileged repository user.
 install -d -o codex -g codex /opt/magic-keys
-runuser -u codex -- git clone --branch main --single-branch https://github.com/YesterdaysLemon/magic-keys.git /opt/magic-keys/app
+if [[ -e /opt/magic-keys/app ]]; then
+  [[ $(runuser -u codex -- git -C /opt/magic-keys/app remote get-url origin) == https://github.com/YesterdaysLemon/magic-keys.git ]]
+  [[ -z $(runuser -u codex -- git -C /opt/magic-keys/app status --porcelain) ]]
+else
+  runuser -u codex -- git clone --branch main --single-branch https://github.com/YesterdaysLemon/magic-keys.git /opt/magic-keys/app
+fi
 install -d /var/log/deploy-manager
 install -o root -g root -m 644 "$bundle_dir/review/apps/magic-keys.env" /etc/deploy-manager/apps/magic-keys.env
 export MAGIC_KEYS_BUNDLE="$bundle_dir" MAGIC_KEYS_BACKUP="$backup_dir"
@@ -85,7 +90,19 @@ if ! caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile; then
   exit 1
 fi
 systemctl restart deploy-manager.service
-curl --fail --silent http://127.0.0.1:9019/healthz >/dev/null
+manager_ready=false
+for attempt in $(seq 1 30); do
+  if curl --fail --silent --max-time 2 http://127.0.0.1:9019/healthz >/dev/null; then
+    manager_ready=true
+    break
+  fi
+  sleep 1
+done
+if [[ $manager_ready != true ]]; then
+  echo 'Deploy Manager did not become healthy within the startup window.' >&2
+  rollback_install
+  exit 1
+fi
 systemctl reload caddy
 trap - ERR
 printf 'Magic Keys integration installed. Backup: %s\n' "$backup_dir"
