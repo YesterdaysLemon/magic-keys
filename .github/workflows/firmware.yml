@@ -1,0 +1,85 @@
+name: Build firmware
+run-name: Firmware ${{ inputs.request_id || 'reference' }} · ${{ inputs.mode || 'via' }}
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Firmware mode (Planck rev6)
+        type: choice
+        options: [via, vial, qmk]
+        default: via
+      project:
+        description: Magic Keys project JSON (blank uses reference preset)
+        type: string
+        default: ''
+      request_id:
+        description: Build identifier
+        type: string
+        default: reference
+permissions:
+  contents: read
+jobs:
+  generate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts
+      - name: Validate and generate
+        env:
+          MK_MODE: ${{ inputs.mode }}
+          MK_PROJECT: ${{ inputs.project }}
+        run: node scripts/generate.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: generated-source
+          path: generated
+          include-hidden-files: true
+          retention-days: 1
+  compile:
+    needs: generate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    container: qmkfm/qmk_cli
+    steps:
+      - name: Check out pinned QMK
+        if: inputs.mode != 'vial'
+        uses: actions/checkout@v4
+        with:
+          repository: qmk/qmk_firmware
+          ref: 08c662f286ddfd12a985f57b584b02eca5af0ae6
+          submodules: recursive
+      - name: Check out pinned Vial
+        if: inputs.mode == 'vial'
+        uses: actions/checkout@v4
+        with:
+          repository: vial-kb/vial-qmk
+          ref: dd43959ae5c08d8a28d38a1acf7b04e86b14a344
+          submodules: recursive
+      - uses: actions/download-artifact@v4
+        with:
+          name: generated-source
+          path: generated
+      - name: Install keymap
+        run: cp -R generated/keyboards/planck/rev6/keymaps/* keyboards/planck/rev6/keymaps/
+      - name: Compile QMK and VIA
+        if: inputs.mode != 'vial'
+        run: qmk compile -kb planck/rev6 -km magic_keys
+      - name: Compile Vial
+        if: inputs.mode == 'vial'
+        run: qmk compile -kb planck/rev6 -km vial
+      - name: Record checksums
+        run: sha256sum ./*.bin > firmware-sha256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: planck-rev6-${{ inputs.mode }}-flash
+          path: |
+            ./*.bin
+            firmware-sha256.txt
+            generated/magic-keys.json
+            generated/README.md
+          if-no-files-found: error
+          retention-days: 3
