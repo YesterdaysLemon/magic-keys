@@ -65,7 +65,9 @@ jobs:
           name: generated-source
           path: generated
       - name: Install keymap
-        run: cp -R generated/keyboards/planck/rev6/keymaps/* keyboards/planck/rev6/keymaps/
+        run: |
+          mkdir -p keyboards/planck/rev6/keymaps
+          cp -R generated/keyboards/planck/rev6/keymaps/* keyboards/planck/rev6/keymaps/
       - name: Compile QMK and VIA
         if: inputs.mode != 'vial'
         run: QMK_HOME="$PWD" qmk compile -kb planck/rev6 -km magic_keys
